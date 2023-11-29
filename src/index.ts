@@ -1,7 +1,7 @@
-import { getInput, setFailed, debug } from "@actions/core";
+import { getInput, setFailed, debug, info } from "@actions/core";
 import { getOctokit, context } from "@actions/github";
 import simpleGit from "simple-git";
-import { fetchRemoteBranches } from "./git-util";
+import { fetchRemoteBranches, hasCommitsBetween } from "./git-util";
 
 async function main() {
   const token = getInput("repo-token");
@@ -11,18 +11,14 @@ async function main() {
   const srcBranch = getInput("src-branch");
   const targetBranch = getInput("target-branch");
 
+  const { repo, owner } = context.repo;
+
   if (!srcBranch || !targetBranch) {
-    console.error("Source or target branch not specified");
+    setFailed("Source or target branch not specified");
     return;
   }
 
-  /**
-   * I want to validate that the source branch and target branch actually exist in the repositiory
-   */
-
   const remoteBranches = await fetchRemoteBranches();
-
-  debug(`Remote branches: ${remoteBranches}`);
 
   if (!remoteBranches.includes(srcBranch)) {
     setFailed(`Source branch ${srcBranch} does not exist`);
@@ -34,7 +30,29 @@ async function main() {
     return;
   }
 
-  const { repo, owner } = context.repo;
+  /** Checks if Pull Request already exists */
+  try {
+    const pulls = await octokit.rest.pulls.list({
+      owner,
+      repo,
+      state: "open",
+      head: `${owner}:${srcBranch}`,
+      base: targetBranch,
+    });
+    if (pulls.data.length > 0) {
+      info(`Pull request already exists: ${pulls.data[0].html_url}`);
+      return;
+    }
+  } catch (error: any) {
+    setFailed(`Error checking for existing pull requests: ${error.message}`);
+  }
+
+  /** Checks if there are commits between the source and target branch */
+  const hasCommits = await hasCommitsBetween(srcBranch, targetBranch);
+  if (!hasCommits) {
+    info(`No commits between ${srcBranch} and ${targetBranch}`);
+    return;
+  }
 
   const createParam: Parameters<typeof octokit.rest.pulls.create>[0] = {
     owner,
