@@ -2,14 +2,21 @@ name: Manual Dispatch
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
-    run:
-        runs-on: ubuntu-latest
-        steps:
-        - name: Check out repository
-          uses: actions/checkout@v4
-        - name: Run a script
-          uses: ./
-          with:
-            src-branch: "release-stg"
+  run:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Run a script
+        uses: ./
+        with:
+          src-branch: "release-stg"
+          target-branch: "main"

@@ -1,41 +1,80 @@
-import core from "@actions/core";
-import { getOctokit } from "@actions/github";
+import { getInput, setFailed, debug, info } from "@actions/core";
+import { getOctokit, context } from "@actions/github";
+import simpleGit from "simple-git";
+import { fetchRemoteBranches, hasCommitsBetween } from "./git-util";
 
-function main() {
-  const token = process.env.GITHUB_TOKEN;
-  if (!token) {
-    console.error("GITHUB_TOKEN not found");
-    return;
-  }
+async function main() {
+  const token = getInput("repo-token");
 
   const octokit = getOctokit(token);
 
-  const srcBranch = core.getInput("src-branch");
-  const targetBranch = core.getInput("target-branch");
+  const srcBranch = getInput("src-branch");
+  const targetBranch = getInput("target-branch");
+
+  const { repo, owner } = context.repo;
 
   if (!srcBranch || !targetBranch) {
-    console.error("Source or target branch not specified");
+    setFailed("Source or target branch not specified");
     return;
   }
 
-  // Assuming the context of the action has repository information
-  const owner = process.env.GITHUB_REPOSITORY_OWNER || "";
-  const repo = (process.env.GITHUB_REPOSITORY || "").split("/")[1];
+  const remoteBranches = await fetchRemoteBranches();
 
-  octokit.rest.pulls
-    .create({
+  if (!remoteBranches.includes(srcBranch)) {
+    setFailed(`Source branch ${srcBranch} does not exist`);
+    return;
+  }
+
+  if (!remoteBranches.includes(targetBranch)) {
+    setFailed(`Target branch ${targetBranch} does not exist`);
+    return;
+  }
+
+  /** Checks if Pull Request already exists */
+  try {
+    const pulls = await octokit.rest.pulls.list({
       owner,
       repo,
-      title: `Merge changes from ${srcBranch} to ${targetBranch}`,
-      head: srcBranch,
+      state: "open",
+      head: `${owner}:${srcBranch}`,
       base: targetBranch,
-      body: "Automatically created pull request",
-    })
+    });
+    if (pulls.data.length > 0) {
+      info(`Pull request already exists: ${pulls.data[0].html_url}`);
+      return;
+    }
+  } catch (error: any) {
+    setFailed(`Error checking for existing pull requests: ${error.message}`);
+  }
+
+  /** Checks if there are commits between the source and target branch */
+  const hasCommits = await hasCommitsBetween(
+    `origin/${targetBranch}`,
+    `origin/${srcBranch}`,
+  );
+  if (!hasCommits) {
+    info(`No commits between ${srcBranch} and ${targetBranch}`);
+    return;
+  }
+
+  const createParam: Parameters<typeof octokit.rest.pulls.create>[0] = {
+    owner,
+    repo,
+    title: `Merge changes from ${srcBranch} to ${targetBranch}`,
+    head: srcBranch,
+    base: targetBranch,
+    body: "Automatically created pull request",
+  };
+
+  debug(`Creating pull request: ${JSON.stringify(createParam)}`);
+
+  octokit.rest.pulls
+    .create(createParam)
     .then((response) => {
       console.log(`Pull request created: ${response.data.html_url}`);
     })
     .catch((error) => {
-      console.error(`Error creating pull request: ${error.message}`);
+      setFailed(`Error creating pull request: ${error.message}`);
     });
 }
 
