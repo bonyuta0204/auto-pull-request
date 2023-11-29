@@ -1,3 +1,4 @@
+import { debug } from "@actions/core";
 import simpleGit from "simple-git";
 
 const git = simpleGit();
@@ -16,5 +17,10 @@ export async function hasCommitsBetween(
     from: srcBranch,
     to: targetBranch,
   });
+  debug(
+    `Commits between ${srcBranch} and ${targetBranch}: ${JSON.stringify(
+      commits,
+    )}`,
+  );
   return commits.total > 0;
 }

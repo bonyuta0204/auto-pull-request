@@ -34360,6 +34360,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.hasCommitsBetween = exports.fetchRemoteBranches = void 0;
+const core_1 = __nccwpck_require__(9093);
 const simple_git_1 = __importDefault(__nccwpck_require__(791));
 const git = (0, simple_git_1.default)();
 async function fetchRemoteBranches() {
@@ -34373,6 +34374,7 @@ async function hasCommitsBetween(srcBranch, targetBranch) {
         from: srcBranch,
         to: targetBranch,
     });
+    (0, core_1.debug)(`Commits between ${srcBranch} and ${targetBranch}: ${JSON.stringify(commits)}`);
     return commits.total > 0;
 }
 exports.hasCommitsBetween = hasCommitsBetween;
