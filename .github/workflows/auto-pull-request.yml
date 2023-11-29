@@ -13,3 +13,4 @@ jobs:
           uses: ./
           with:
             src-branch: "release-stg"
+            target-branch: "main"

@@ -28919,11 +28919,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core_1 = __importDefault(__nccwpck_require__(9093));
 const github_1 = __nccwpck_require__(5942);
 function main() {
-    const token = process.env.GITHUB_TOKEN;
-    if (!token) {
-        console.error("GITHUB_TOKEN not found");
-        return;
-    }
+    const token = core_1.default.getInput("repo-token");
     const octokit = (0, github_1.getOctokit)(token);
     const srcBranch = core_1.default.getInput("src-branch");
     const targetBranch = core_1.default.getInput("target-branch");

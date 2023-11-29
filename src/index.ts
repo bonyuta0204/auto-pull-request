@@ -2,11 +2,7 @@ import core from "@actions/core";
 import { getOctokit } from "@actions/github";
 
 function main() {
-  const token = process.env.GITHUB_TOKEN;
-  if (!token) {
-    console.error("GITHUB_TOKEN not found");
-    return;
-  }
+  const token = core.getInput("repo-token");
 
   const octokit = getOctokit(token);
 
