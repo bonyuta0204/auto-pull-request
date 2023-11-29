@@ -30814,23 +30814,23 @@ function main() {
         console.error("Source or target branch not specified");
         return;
     }
-    // Assuming the context of the action has repository information
-    const owner = process.env.GITHUB_REPOSITORY_OWNER || "";
-    const repo = (process.env.GITHUB_REPOSITORY || "").split("/")[1];
-    octokit.rest.pulls
-        .create({
+    const { repo, owner } = github_1.context.repo;
+    const createParam = {
         owner,
         repo,
         title: `Merge changes from ${srcBranch} to ${targetBranch}`,
         head: srcBranch,
         base: targetBranch,
         body: "Automatically created pull request",
-    })
+    };
+    (0, core_1.debug)(`Creating pull request: ${JSON.stringify(createParam)}`);
+    octokit.rest.pulls
+        .create(createParam)
         .then((response) => {
         console.log(`Pull request created: ${response.data.html_url}`);
     })
         .catch((error) => {
-        console.error(`Error creating pull request: ${error.message}`);
+        (0, core_1.setFailed)(`Error creating pull request: ${error.message}`);
     });
 }
 main();

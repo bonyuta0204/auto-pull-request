@@ -1,4 +1,4 @@
-import { getInput } from "@actions/core";
+import { getInput, setFailed, debug } from "@actions/core";
 import { getOctokit, context } from "@actions/github";
 
 function main() {
@@ -16,20 +16,24 @@ function main() {
 
   const { repo, owner } = context.repo;
 
+  const createParam: Parameters<typeof octokit.rest.pulls.create>[0] = {
+    owner,
+    repo,
+    title: `Merge changes from ${srcBranch} to ${targetBranch}`,
+    head: srcBranch,
+    base: targetBranch,
+    body: "Automatically created pull request",
+  };
+
+  debug(`Creating pull request: ${JSON.stringify(createParam)}`);
+
   octokit.rest.pulls
-    .create({
-      owner,
-      repo,
-      title: `Merge changes from ${srcBranch} to ${targetBranch}`,
-      head: srcBranch,
-      base: targetBranch,
-      body: "Automatically created pull request",
-    })
+    .create(createParam)
     .then((response) => {
       console.log(`Pull request created: ${response.data.html_url}`);
     })
     .catch((error) => {
-      console.error(`Error creating pull request: ${error.message}`);
+      setFailed(`Error creating pull request: ${error.message}`);
     });
 }
 
