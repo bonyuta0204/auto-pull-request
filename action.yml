@@ -4,6 +4,7 @@ inputs:
   repo-token:
     description: 'The GitHub token used to manage labels'
     required: false
+    default: ${{ github.token }}
   src-branch:  # id of input
     description: "src branc"
   target-branch:  # id of input
