@@ -34364,7 +34364,7 @@ const core_1 = __nccwpck_require__(9093);
 const simple_git_1 = __importDefault(__nccwpck_require__(791));
 const git = (0, simple_git_1.default)();
 async function fetchRemoteBranches() {
-    await git.fetch(["--depth=1"]);
+    await git.fetch([]);
     const branches = await git.branch(["-r"]);
     return branches.all.map((branch) => branch.replace("origin/", ""));
 }
@@ -36342,7 +36342,7 @@ async function main() {
         (0, core_1.setFailed)(`Error checking for existing pull requests: ${error.message}`);
     }
     /** Checks if there are commits between the source and target branch */
-    const hasCommits = await (0, git_util_1.hasCommitsBetween)(`origin/${srcBranch}`, `origin/${targetBranch}`);
+    const hasCommits = await (0, git_util_1.hasCommitsBetween)(`origin/${targetBranch}`, `origin/${srcBranch}`);
     if (!hasCommits) {
         (0, core_1.info)(`No commits between ${srcBranch} and ${targetBranch}`);
         return;

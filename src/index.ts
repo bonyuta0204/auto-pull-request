@@ -49,8 +49,8 @@ async function main() {
 
   /** Checks if there are commits between the source and target branch */
   const hasCommits = await hasCommitsBetween(
-    `origin/${srcBranch}`,
     `origin/${targetBranch}`,
+    `origin/${srcBranch}`,
   );
   if (!hasCommits) {
     info(`No commits between ${srcBranch} and ${targetBranch}`);
