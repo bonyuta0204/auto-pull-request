@@ -34364,7 +34364,7 @@ const core_1 = __nccwpck_require__(9093);
 const simple_git_1 = __importDefault(__nccwpck_require__(791));
 const git = (0, simple_git_1.default)();
 async function fetchRemoteBranches() {
-    await git.fetch([]);
+    await git.fetch(["--unshallow"]);
     const branches = await git.branch(["-r"]);
     return branches.all.map((branch) => branch.replace("origin/", ""));
 }
