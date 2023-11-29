@@ -34373,6 +34373,7 @@ async function hasCommitsBetween(srcBranch, targetBranch) {
     const commits = await git.log({
         from: srcBranch,
         to: targetBranch,
+        symmetric: false,
     });
     (0, core_1.debug)(`Commits between ${srcBranch} and ${targetBranch}: ${JSON.stringify(commits)}`);
     return commits.total > 0;

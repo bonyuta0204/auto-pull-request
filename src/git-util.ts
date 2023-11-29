@@ -16,6 +16,7 @@ export async function hasCommitsBetween(
   const commits = await git.log({
     from: srcBranch,
     to: targetBranch,
+    symmetric: false,
   });
   debug(
     `Commits between ${srcBranch} and ${targetBranch}: ${JSON.stringify(
