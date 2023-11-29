@@ -1,5 +1,5 @@
 import { getInput } from "@actions/core";
-import { getOctokit } from "@actions/github";
+import { getOctokit, context } from "@actions/github";
 
 function main() {
   const token = getInput("repo-token");
@@ -14,9 +14,7 @@ function main() {
     return;
   }
 
-  // Assuming the context of the action has repository information
-  const owner = process.env.GITHUB_REPOSITORY_OWNER || "";
-  const repo = (process.env.GITHUB_REPOSITORY || "").split("/")[1];
+  const { repo, owner } = context.repo;
 
   octokit.rest.pulls
     .create({
