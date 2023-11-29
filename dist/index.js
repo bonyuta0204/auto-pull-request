@@ -28907,50 +28907,6 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
-/***/ 2694:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-const core_1 = __importDefault(__nccwpck_require__(9093));
-const github_1 = __nccwpck_require__(5942);
-function main() {
-    const token = core_1.default.getInput("repo-token");
-    const octokit = (0, github_1.getOctokit)(token);
-    const srcBranch = core_1.default.getInput("src-branch");
-    const targetBranch = core_1.default.getInput("target-branch");
-    if (!srcBranch || !targetBranch) {
-        console.error("Source or target branch not specified");
-        return;
-    }
-    // Assuming the context of the action has repository information
-    const owner = process.env.GITHUB_REPOSITORY_OWNER || "";
-    const repo = (process.env.GITHUB_REPOSITORY || "").split("/")[1];
-    octokit.rest.pulls
-        .create({
-        owner,
-        repo,
-        title: `Merge changes from ${srcBranch} to ${targetBranch}`,
-        head: srcBranch,
-        base: targetBranch,
-        body: "Automatically created pull request",
-    })
-        .then((response) => {
-        console.log(`Pull request created: ${response.data.html_url}`);
-    })
-        .catch((error) => {
-        console.error(`Error creating pull request: ${error.message}`);
-    });
-}
-main();
-
-
-/***/ }),
-
 /***/ 9491:
 /***/ ((module) => {
 
@@ -30840,12 +30796,47 @@ module.exports = parseParams
 /******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
 /******/ 	
 /************************************************************************/
-/******/ 	
-/******/ 	// startup
-/******/ 	// Load entry module and return exports
-/******/ 	// This entry module is referenced by other modules so it can't be inlined
-/******/ 	var __webpack_exports__ = __nccwpck_require__(2694);
-/******/ 	module.exports = __webpack_exports__;
-/******/ 	
+var __webpack_exports__ = {};
+// This entry need to be wrapped in an IIFE because it need to be in strict mode.
+(() => {
+"use strict";
+var exports = __webpack_exports__;
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const core_1 = __nccwpck_require__(9093);
+const github_1 = __nccwpck_require__(5942);
+function main() {
+    const token = (0, core_1.getInput)("repo-token");
+    const octokit = (0, github_1.getOctokit)(token);
+    const srcBranch = (0, core_1.getInput)("src-branch");
+    const targetBranch = (0, core_1.getInput)("target-branch");
+    if (!srcBranch || !targetBranch) {
+        console.error("Source or target branch not specified");
+        return;
+    }
+    // Assuming the context of the action has repository information
+    const owner = process.env.GITHUB_REPOSITORY_OWNER || "";
+    const repo = (process.env.GITHUB_REPOSITORY || "").split("/")[1];
+    octokit.rest.pulls
+        .create({
+        owner,
+        repo,
+        title: `Merge changes from ${srcBranch} to ${targetBranch}`,
+        head: srcBranch,
+        base: targetBranch,
+        body: "Automatically created pull request",
+    })
+        .then((response) => {
+        console.log(`Pull request created: ${response.data.html_url}`);
+    })
+        .catch((error) => {
+        console.error(`Error creating pull request: ${error.message}`);
+    });
+}
+main();
+
+})();
+
+module.exports = __webpack_exports__;
 /******/ })()
 ;

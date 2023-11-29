@@ -1,13 +1,13 @@
-import core from "@actions/core";
+import { getInput } from "@actions/core";
 import { getOctokit } from "@actions/github";
 
 function main() {
-  const token = core.getInput("repo-token");
+  const token = getInput("repo-token");
 
   const octokit = getOctokit(token);
 
-  const srcBranch = core.getInput("src-branch");
-  const targetBranch = core.getInput("target-branch");
+  const srcBranch = getInput("src-branch");
+  const targetBranch = getInput("target-branch");
 
   if (!srcBranch || !targetBranch) {
     console.error("Source or target branch not specified");
