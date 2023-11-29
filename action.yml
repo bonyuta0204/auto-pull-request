@@ -1,0 +1,9 @@
+name: 'Auto Pull Request'
+description: 'Greet someone and record the time'
+inputs:
+  src-branch:  # id of input
+    description: "src-branch"
+    required: true
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
