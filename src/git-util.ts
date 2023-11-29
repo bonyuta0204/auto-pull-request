@@ -9,7 +9,7 @@ export async function fetchRemoteBranches() {
 
 export async function hasCommitsBetween(
   srcBranch: string,
-  targetBranch: string
+  targetBranch: string,
 ) {
   const commits = await git.log({
     from: srcBranch,

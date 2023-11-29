@@ -34359,7 +34359,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.fetchRemoteBranches = void 0;
+exports.hasCommitsBetween = exports.fetchRemoteBranches = void 0;
 const simple_git_1 = __importDefault(__nccwpck_require__(791));
 const git = (0, simple_git_1.default)();
 async function fetchRemoteBranches() {
@@ -34367,6 +34367,14 @@ async function fetchRemoteBranches() {
     return branches.all.map((branch) => branch.replace("origin/", ""));
 }
 exports.fetchRemoteBranches = fetchRemoteBranches;
+async function hasCommitsBetween(srcBranch, targetBranch) {
+    const commits = await git.log({
+        from: srcBranch,
+        to: targetBranch,
+    });
+    return commits.total > 0;
+}
+exports.hasCommitsBetween = hasCommitsBetween;
 
 
 /***/ }),
@@ -36299,22 +36307,43 @@ async function main() {
     const octokit = (0, github_1.getOctokit)(token);
     const srcBranch = (0, core_1.getInput)("src-branch");
     const targetBranch = (0, core_1.getInput)("target-branch");
+    const { repo, owner } = github_1.context.repo;
     if (!srcBranch || !targetBranch) {
-        console.error("Source or target branch not specified");
+        (0, core_1.setFailed)("Source or target branch not specified");
         return;
     }
-    /**
-     * I want to validate that the source branch and target branch actually exist in the repositiory
-     */
     const remoteBranches = await (0, git_util_1.fetchRemoteBranches)();
-    (0, core_1.debug)(`Remote branches: ${remoteBranches}`);
     if (!remoteBranches.includes(srcBranch)) {
         (0, core_1.setFailed)(`Source branch ${srcBranch} does not exist`);
+        return;
     }
     if (!remoteBranches.includes(targetBranch)) {
         (0, core_1.setFailed)(`Target branch ${targetBranch} does not exist`);
+        return;
     }
-    const { repo, owner } = github_1.context.repo;
+    /** Checks if Pull Request already exists */
+    try {
+        const pulls = await octokit.rest.pulls.list({
+            owner,
+            repo,
+            state: "open",
+            head: `${owner}:${srcBranch}`,
+            base: targetBranch,
+        });
+        if (pulls.data.length > 0) {
+            (0, core_1.info)(`Pull request already exists: ${pulls.data[0].html_url}`);
+            return;
+        }
+    }
+    catch (error) {
+        (0, core_1.setFailed)(`Error checking for existing pull requests: ${error.message}`);
+    }
+    /** Checks if there are commits between the source and target branch */
+    const hasCommits = await (0, git_util_1.hasCommitsBetween)(srcBranch, targetBranch);
+    if (!hasCommits) {
+        (0, core_1.info)(`No commits between ${srcBranch} and ${targetBranch}`);
+        return;
+    }
     const createParam = {
         owner,
         repo,
