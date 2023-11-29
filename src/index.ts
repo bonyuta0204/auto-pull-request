@@ -1,7 +1,9 @@
 import { getInput, setFailed, debug } from "@actions/core";
 import { getOctokit, context } from "@actions/github";
+import simpleGit from "simple-git";
+import { fetchRemoteBranches } from "./git-util";
 
-function main() {
+async function main() {
   const token = getInput("repo-token");
 
   const octokit = getOctokit(token);
@@ -12,6 +14,22 @@ function main() {
   if (!srcBranch || !targetBranch) {
     console.error("Source or target branch not specified");
     return;
+  }
+
+  /**
+   * I want to validate that the source branch and target branch actually exist in the repositiory
+   */
+
+  const remoteBranches = await fetchRemoteBranches();
+
+  debug(`Remote branches: ${remoteBranches}`);
+
+  if (!remoteBranches.includes(srcBranch)) {
+    setFailed(`Source branch ${srcBranch} does not exist`);
+  }
+
+  if (!remoteBranches.includes(targetBranch)) {
+    setFailed(`Target branch ${targetBranch} does not exist`);
   }
 
   const { repo, owner } = context.repo;
