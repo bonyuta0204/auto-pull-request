@@ -26,10 +26,12 @@ async function main() {
 
   if (!remoteBranches.includes(srcBranch)) {
     setFailed(`Source branch ${srcBranch} does not exist`);
+    return;
   }
 
   if (!remoteBranches.includes(targetBranch)) {
     setFailed(`Target branch ${targetBranch} does not exist`);
+    return;
   }
 
   const { repo, owner } = context.repo;
