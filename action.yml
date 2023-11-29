@@ -3,6 +3,8 @@ description: 'Greet someone and record the time'
 inputs:
   src-branch:  # id of input
     description: "src-branch"
+  target-branch:  # id of input
+    description: "src-branch"
     required: true
 runs:
   using: 'node20'
