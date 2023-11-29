@@ -36340,7 +36340,7 @@ async function main() {
         (0, core_1.setFailed)(`Error checking for existing pull requests: ${error.message}`);
     }
     /** Checks if there are commits between the source and target branch */
-    const hasCommits = await (0, git_util_1.hasCommitsBetween)(srcBranch, targetBranch);
+    const hasCommits = await (0, git_util_1.hasCommitsBetween)(`origin/${srcBranch}`, `origin/${targetBranch}`);
     if (!hasCommits) {
         (0, core_1.info)(`No commits between ${srcBranch} and ${targetBranch}`);
         return;
