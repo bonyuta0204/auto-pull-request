@@ -2,18 +2,31 @@ import { getInput, setFailed, debug, info } from '@actions/core'
 import { getOctokit, context } from '@actions/github'
 import { fetchRemoteBranches, hasCommitsBetween } from './git-util'
 
-async function main() {
-  const token = getInput('repo-token')
+type OptionParams = {
+  srcBranch: string
+  targetBranch: string
+  title?: string
+  body?: string
+  repoToken: string
+  repo: string
+  owner: string
+}
 
-  const octokit = getOctokit(token)
+const generateOptionParams = (): OptionParams => ({
+  srcBranch: getInput('src-branch'),
+  targetBranch: getInput('target-branch'),
+  title: getInput('title'),
+  body: getInput('body'),
+  repoToken: getInput('repo-token'),
+  repo: context.repo.repo,
+  owner: context.repo.owner
+})
 
-  const srcBranch = getInput('src-branch')
-  const targetBranch = getInput('target-branch')
+export async function run(options: OptionParams) {
+  const { srcBranch, targetBranch, title, body, repoToken, repo, owner } =
+    options
 
-  const title = getInput('title')
-  const body = getInput('body')
-
-  const { repo, owner } = context.repo
+  const octokit = getOctokit(repoToken)
 
   if (!srcBranch || !targetBranch) {
     setFailed('Source or target branch not specified')
@@ -78,6 +91,10 @@ async function main() {
     .catch((error) => {
       setFailed(`Error creating pull request: ${error.message}`)
     })
+}
+
+async function main() {
+  run(generateOptionParams())
 }
 
 main()
