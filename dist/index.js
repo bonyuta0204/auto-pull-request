@@ -36351,17 +36351,22 @@ var __webpack_exports__ = {};
 var exports = __webpack_exports__;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.run = void 0;
 const core_1 = __nccwpck_require__(9093);
 const github_1 = __nccwpck_require__(5942);
 const git_util_1 = __nccwpck_require__(8561);
-async function main() {
-    const token = (0, core_1.getInput)('repo-token');
-    const octokit = (0, github_1.getOctokit)(token);
-    const srcBranch = (0, core_1.getInput)('src-branch');
-    const targetBranch = (0, core_1.getInput)('target-branch');
-    const title = (0, core_1.getInput)('title');
-    const body = (0, core_1.getInput)('body');
-    const { repo, owner } = github_1.context.repo;
+const generateOptionParams = () => ({
+    srcBranch: (0, core_1.getInput)('src-branch'),
+    targetBranch: (0, core_1.getInput)('target-branch'),
+    title: (0, core_1.getInput)('title'),
+    body: (0, core_1.getInput)('body'),
+    repoToken: (0, core_1.getInput)('repo-token'),
+    repo: github_1.context.repo.repo,
+    owner: github_1.context.repo.owner
+});
+async function run(options) {
+    const { srcBranch, targetBranch, title, body, repoToken, repo, owner } = options;
+    const octokit = (0, github_1.getOctokit)(repoToken);
     if (!srcBranch || !targetBranch) {
         (0, core_1.setFailed)('Source or target branch not specified');
         return;
@@ -36415,6 +36420,10 @@ async function main() {
         .catch((error) => {
         (0, core_1.setFailed)(`Error creating pull request: ${error.message}`);
     });
+}
+exports.run = run;
+async function main() {
+    run(generateOptionParams());
 }
 main();
 
