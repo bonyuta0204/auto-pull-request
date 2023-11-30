@@ -1,6 +1,5 @@
 import { getInput, setFailed, debug, info } from '@actions/core'
 import { getOctokit, context } from '@actions/github'
-import simpleGit from 'simple-git'
 import { fetchRemoteBranches, hasCommitsBetween } from './git-util'
 
 async function main() {
@@ -10,6 +9,9 @@ async function main() {
 
   const srcBranch = getInput('src-branch')
   const targetBranch = getInput('target-branch')
+
+  const title = getInput('title')
+  const body = getInput('body')
 
   const { repo, owner } = context.repo
 
@@ -60,10 +62,10 @@ async function main() {
   const createParam: Parameters<typeof octokit.rest.pulls.create>[0] = {
     owner,
     repo,
-    title: `Merge changes from ${srcBranch} to ${targetBranch}`,
+    title: title || `Merge changes from ${srcBranch} to ${targetBranch}`,
     head: srcBranch,
     base: targetBranch,
-    body: 'Automatically created pull request'
+    body: body || 'Automatically created pull request'
   }
 
   debug(`Creating pull request: ${JSON.stringify(createParam)}`)

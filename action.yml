@@ -1,15 +1,20 @@
 name: 'Auto Pull Request'
+author: 'Yuta Nakamura'
 description: 'Greet someone and record the time'
 inputs:
   repo-token:
-    description: 'The GitHub token used to manage labels'
+    description: 'The GitHub token used to create pull request'
     required: false
     default: ${{ github.token }}
   src-branch:
-    description: "src branc"
+    description: "src branch for pull request"
   target-branch:
-    description: "target branch"
+    description: "target branch for pull request"
     required: true
+  title:
+    description: "title for pull request"
+  body:
+    description: "body for pull request"
 runs:
   using: 'node20'
   main: 'dist/index.js'

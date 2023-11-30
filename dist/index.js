@@ -34392,28 +34392,28 @@ const git = (0, simple_git_1.default)();
  * Fetches all commits from the remote repository
  */
 async function fullFetch() {
-    return (0, promises_1.access)(path.join(".git", "shallow"))
+    return (0, promises_1.access)(path.join('.git', 'shallow'))
         .then(async () => {
-        (0, core_1.debug)("Repository is shallow, fetching all commits");
-        await git.fetch(["--unshallow"]);
+        (0, core_1.debug)('Repository is shallow, fetching all commits');
+        await git.fetch(['--unshallow']);
     })
         .catch(async () => {
-        (0, core_1.debug)("Repository is complete, fetching commits");
+        (0, core_1.debug)('Repository is complete, fetching commits');
         await git.fetch([]);
     });
 }
 exports.fullFetch = fullFetch;
 async function fetchRemoteBranches() {
     await fullFetch();
-    const branches = await git.branch(["-r"]);
-    return branches.all.map((branch) => branch.replace("origin/", ""));
+    const branches = await git.branch(['-r']);
+    return branches.all.map((branch) => branch.replace('origin/', ''));
 }
 exports.fetchRemoteBranches = fetchRemoteBranches;
 async function hasCommitsBetween(srcBranch, targetBranch) {
     const commits = await git.log({
         from: srcBranch,
         to: targetBranch,
-        symmetric: false,
+        symmetric: false
     });
     (0, core_1.debug)(`Commits between ${srcBranch} and ${targetBranch}: ${JSON.stringify(commits)}`);
     return commits.total > 0;
@@ -36355,13 +36355,15 @@ const core_1 = __nccwpck_require__(9093);
 const github_1 = __nccwpck_require__(5942);
 const git_util_1 = __nccwpck_require__(8561);
 async function main() {
-    const token = (0, core_1.getInput)("repo-token");
+    const token = (0, core_1.getInput)('repo-token');
     const octokit = (0, github_1.getOctokit)(token);
-    const srcBranch = (0, core_1.getInput)("src-branch");
-    const targetBranch = (0, core_1.getInput)("target-branch");
+    const srcBranch = (0, core_1.getInput)('src-branch');
+    const targetBranch = (0, core_1.getInput)('target-branch');
+    const title = (0, core_1.getInput)('title');
+    const body = (0, core_1.getInput)('body');
     const { repo, owner } = github_1.context.repo;
     if (!srcBranch || !targetBranch) {
-        (0, core_1.setFailed)("Source or target branch not specified");
+        (0, core_1.setFailed)('Source or target branch not specified');
         return;
     }
     const remoteBranches = await (0, git_util_1.fetchRemoteBranches)();
@@ -36378,9 +36380,9 @@ async function main() {
         const pulls = await octokit.rest.pulls.list({
             owner,
             repo,
-            state: "open",
+            state: 'open',
             head: `${owner}:${srcBranch}`,
-            base: targetBranch,
+            base: targetBranch
         });
         if (pulls.data.length > 0) {
             (0, core_1.info)(`Pull request already exists: ${pulls.data[0].html_url}`);
@@ -36399,10 +36401,10 @@ async function main() {
     const createParam = {
         owner,
         repo,
-        title: `Merge changes from ${srcBranch} to ${targetBranch}`,
+        title: title || `Merge changes from ${srcBranch} to ${targetBranch}`,
         head: srcBranch,
         base: targetBranch,
-        body: "Automatically created pull request",
+        body: body || 'Automatically created pull request'
     };
     (0, core_1.debug)(`Creating pull request: ${JSON.stringify(createParam)}`);
     octokit.rest.pulls
