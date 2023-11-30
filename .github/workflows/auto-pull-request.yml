@@ -18,5 +18,7 @@ jobs:
       - name: Run a script
         uses: ./
         with:
-          src-branch: "release-stg"
-          target-branch: "main"
+          src-branch: "main"
+          target-branch: "releaes/v1"
+          title: "Main to Release v1"
+          body: "main to Release v1"
