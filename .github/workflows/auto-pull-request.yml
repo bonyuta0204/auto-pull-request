@@ -20,8 +20,3 @@ jobs:
         with:
           src-branch: "release-stg"
           target-branch: "main"
-      - name: Run a script
-        uses: ./
-        with:
-          src-branch: "main"
-          target-branch: "test/merge-target"
