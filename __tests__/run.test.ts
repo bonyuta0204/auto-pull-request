@@ -1,5 +1,5 @@
 import { setFailed } from '@actions/core'
-import { run } from '../src/index' // Replace with the actual file name
+import { run } from '../src/run'
 import { fetchRemoteBranches } from '../src/git-util'
 import { vi, expect, describe, it, beforeEach } from 'vitest'
 
