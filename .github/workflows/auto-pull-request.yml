@@ -19,6 +19,6 @@ jobs:
         uses: ./
         with:
           src-branch: "main"
-          target-branch: "releaes/v1"
+          target-branch: "release/v1"
           title: "Main to Release v1"
           body: "main to Release v1"
