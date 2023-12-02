@@ -4,6 +4,7 @@ import { fetchRemoteBranches, hasCommitsBetween } from './git-util'
 import {
   PullRequestDetailItem,
   PullRequestItem,
+  addLabelsToPullRequest,
   createPullRequest,
   fetchExistingPullRequest
 } from './github-utils'
@@ -84,5 +85,16 @@ export async function run(options: OptionParams) {
 
   if (!pullRequest) return
 
-  info(`Pull request created: ${pullRequest.html_url}`)
+  if (options.labels.length > 0) {
+    /** Adds labels to the pull request */
+    const labels = await addLabelsToPullRequest(octokit, {
+      owner,
+      repo,
+      issue_number: pullRequest.number,
+      labels: options.labels
+    })
+    if (labels) {
+      info(`Added labels to pull request: ${labels.map((label) => label.name)}`)
+    }
+  }
 }

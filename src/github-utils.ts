@@ -3,9 +3,9 @@ import { getOctokit } from '@actions/github'
 
 type OctoKit = ReturnType<typeof getOctokit>
 
-export type PullRequestCreateParam = Parameters<
-  OctoKit['rest']['pulls']['create']
->[number]
+type PullRequestCreateParam = Parameters<OctoKit['rest']['pulls']['create']>[0]
+
+type issueAddLabelsParam = Parameters<OctoKit['rest']['issues']['addLabels']>[0]
 
 /** Pull Request response in list API */
 export type PullRequestItem = Awaited<
@@ -46,5 +46,19 @@ export async function createPullRequest(
     return response.data
   } catch (error: any) {
     setFailed(`Error creating pull request: ${error.message}`)
+  }
+}
+
+/** Add labels to pull request */
+export async function addLabelsToPullRequest(
+  octokit: OctoKit,
+  param: issueAddLabelsParam
+) {
+  debug(`Adding labels to pull request: ${JSON.stringify(param)}`)
+  try {
+    const response = await octokit.rest.issues.addLabels(param)
+    return response.data
+  } catch (error: any) {
+    setFailed(`Error adding labels to pull request: ${error.message}`)
   }
 }
