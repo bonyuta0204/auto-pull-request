@@ -2,7 +2,6 @@ import { getInput } from '@actions/core'
 import { context } from '@actions/github'
 import { OptionParams, run } from './run'
 
-
 const generateOptionParams = (): OptionParams => ({
   srcBranch: getInput('src-branch'),
   targetBranch: getInput('target-branch'),
@@ -12,7 +11,6 @@ const generateOptionParams = (): OptionParams => ({
   repo: context.repo.repo,
   owner: context.repo.owner
 })
-
 
 async function main() {
   run(generateOptionParams())

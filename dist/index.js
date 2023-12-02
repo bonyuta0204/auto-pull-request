@@ -34423,6 +34423,96 @@ exports.hasCommitsBetween = hasCommitsBetween;
 
 /***/ }),
 
+/***/ 262:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.fetchExistingPullRequest = void 0;
+async function fetchExistingPullRequest(octokit, owner, repo, srcBranch, targetBranch) {
+    const pulls = await octokit.rest.pulls.list({
+        owner,
+        repo,
+        state: 'open',
+        head: `${owner}:${srcBranch}`,
+        base: targetBranch
+    });
+    if (pulls.data.length > 0) {
+        return pulls.data[0];
+    }
+}
+exports.fetchExistingPullRequest = fetchExistingPullRequest;
+
+
+/***/ }),
+
+/***/ 882:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.run = void 0;
+const core_1 = __nccwpck_require__(9093);
+const github_1 = __nccwpck_require__(5942);
+const git_util_1 = __nccwpck_require__(8561);
+const github_utils_1 = __nccwpck_require__(262);
+async function run(options) {
+    const { srcBranch, targetBranch, title, body, repoToken, repo, owner } = options;
+    const octokit = (0, github_1.getOctokit)(repoToken);
+    if (!srcBranch || !targetBranch) {
+        (0, core_1.setFailed)('Source or target branch not specified');
+        return;
+    }
+    const remoteBranches = await (0, git_util_1.fetchRemoteBranches)();
+    if (!remoteBranches.includes(srcBranch)) {
+        (0, core_1.setFailed)(`Source branch ${srcBranch} does not exist`);
+        return;
+    }
+    if (!remoteBranches.includes(targetBranch)) {
+        (0, core_1.setFailed)(`Target branch ${targetBranch} does not exist`);
+        return;
+    }
+    /** Checks if Pull Request already exists */
+    try {
+        const pull = await (0, github_utils_1.fetchExistingPullRequest)(octokit, owner, repo, srcBranch, targetBranch);
+        if (pull) {
+            (0, core_1.info)(`Pull request already exists: ${pull.html_url}`);
+        }
+    }
+    catch (error) {
+        (0, core_1.setFailed)(`Error checking for existing pull requests: ${error.message}`);
+    }
+    /** Checks if there are commits between the source and target branch */
+    const hasCommits = await (0, git_util_1.hasCommitsBetween)(`origin/${targetBranch}`, `origin/${srcBranch}`);
+    if (!hasCommits) {
+        (0, core_1.info)(`No commits between ${srcBranch} and ${targetBranch}`);
+        return;
+    }
+    const createParam = {
+        owner,
+        repo,
+        title: title || `Merge changes from ${srcBranch} to ${targetBranch}`,
+        head: srcBranch,
+        base: targetBranch,
+        body: body || 'Automatically created pull request'
+    };
+    (0, core_1.debug)(`Creating pull request: ${JSON.stringify(createParam)}`);
+    octokit.rest.pulls
+        .create(createParam)
+        .then((response) => {
+        console.log(`Pull request created: ${response.data.html_url}`);
+    })
+        .catch((error) => {
+        (0, core_1.setFailed)(`Error creating pull request: ${error.message}`);
+    });
+}
+exports.run = run;
+
+
+/***/ }),
+
 /***/ 7676:
 /***/ ((module) => {
 
@@ -36351,10 +36441,9 @@ var __webpack_exports__ = {};
 var exports = __webpack_exports__;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.run = void 0;
 const core_1 = __nccwpck_require__(9093);
 const github_1 = __nccwpck_require__(5942);
-const git_util_1 = __nccwpck_require__(8561);
+const run_1 = __nccwpck_require__(882);
 const generateOptionParams = () => ({
     srcBranch: (0, core_1.getInput)('src-branch'),
     targetBranch: (0, core_1.getInput)('target-branch'),
@@ -36364,66 +36453,8 @@ const generateOptionParams = () => ({
     repo: github_1.context.repo.repo,
     owner: github_1.context.repo.owner
 });
-async function run(options) {
-    const { srcBranch, targetBranch, title, body, repoToken, repo, owner } = options;
-    const octokit = (0, github_1.getOctokit)(repoToken);
-    if (!srcBranch || !targetBranch) {
-        (0, core_1.setFailed)('Source or target branch not specified');
-        return;
-    }
-    const remoteBranches = await (0, git_util_1.fetchRemoteBranches)();
-    if (!remoteBranches.includes(srcBranch)) {
-        (0, core_1.setFailed)(`Source branch ${srcBranch} does not exist`);
-        return;
-    }
-    if (!remoteBranches.includes(targetBranch)) {
-        (0, core_1.setFailed)(`Target branch ${targetBranch} does not exist`);
-        return;
-    }
-    /** Checks if Pull Request already exists */
-    try {
-        const pulls = await octokit.rest.pulls.list({
-            owner,
-            repo,
-            state: 'open',
-            head: `${owner}:${srcBranch}`,
-            base: targetBranch
-        });
-        if (pulls.data.length > 0) {
-            (0, core_1.info)(`Pull request already exists: ${pulls.data[0].html_url}`);
-            return;
-        }
-    }
-    catch (error) {
-        (0, core_1.setFailed)(`Error checking for existing pull requests: ${error.message}`);
-    }
-    /** Checks if there are commits between the source and target branch */
-    const hasCommits = await (0, git_util_1.hasCommitsBetween)(`origin/${targetBranch}`, `origin/${srcBranch}`);
-    if (!hasCommits) {
-        (0, core_1.info)(`No commits between ${srcBranch} and ${targetBranch}`);
-        return;
-    }
-    const createParam = {
-        owner,
-        repo,
-        title: title || `Merge changes from ${srcBranch} to ${targetBranch}`,
-        head: srcBranch,
-        base: targetBranch,
-        body: body || 'Automatically created pull request'
-    };
-    (0, core_1.debug)(`Creating pull request: ${JSON.stringify(createParam)}`);
-    octokit.rest.pulls
-        .create(createParam)
-        .then((response) => {
-        console.log(`Pull request created: ${response.data.html_url}`);
-    })
-        .catch((error) => {
-        (0, core_1.setFailed)(`Error creating pull request: ${error.message}`);
-    });
-}
-exports.run = run;
 async function main() {
-    run(generateOptionParams());
+    (0, run_1.run)(generateOptionParams());
 }
 main();
 
