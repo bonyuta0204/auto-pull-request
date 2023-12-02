@@ -34424,12 +34424,13 @@ exports.hasCommitsBetween = hasCommitsBetween;
 /***/ }),
 
 /***/ 262:
-/***/ ((__unused_webpack_module, exports) => {
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.fetchExistingPullRequest = void 0;
+exports.addLabelsToPullRequest = exports.createPullRequest = exports.fetchExistingPullRequest = void 0;
+const core_1 = __nccwpck_require__(9093);
 async function fetchExistingPullRequest(octokit, owner, repo, srcBranch, targetBranch) {
     const pulls = await octokit.rest.pulls.list({
         owner,
@@ -34443,6 +34444,29 @@ async function fetchExistingPullRequest(octokit, owner, repo, srcBranch, targetB
     }
 }
 exports.fetchExistingPullRequest = fetchExistingPullRequest;
+async function createPullRequest(octokit, createParam) {
+    (0, core_1.debug)(`Creating pull request: ${JSON.stringify(createParam)}`);
+    try {
+        const response = await octokit.rest.pulls.create(createParam);
+        return response.data;
+    }
+    catch (error) {
+        (0, core_1.setFailed)(`Error creating pull request: ${error.message}`);
+    }
+}
+exports.createPullRequest = createPullRequest;
+/** Add labels to pull request */
+async function addLabelsToPullRequest(octokit, param) {
+    (0, core_1.debug)(`Adding labels to pull request: ${JSON.stringify(param)}`);
+    try {
+        const response = await octokit.rest.issues.addLabels(param);
+        return response.data;
+    }
+    catch (error) {
+        (0, core_1.setFailed)(`Error adding labels to pull request: ${error.message}`);
+    }
+}
+exports.addLabelsToPullRequest = addLabelsToPullRequest;
 
 
 /***/ }),
@@ -34461,6 +34485,7 @@ const github_utils_1 = __nccwpck_require__(262);
 async function run(options) {
     const { srcBranch, targetBranch, title, body, repoToken, repo, owner } = options;
     const octokit = (0, github_1.getOctokit)(repoToken);
+    let pullRequest = undefined;
     if (!srcBranch || !targetBranch) {
         (0, core_1.setFailed)('Source or target branch not specified');
         return;
@@ -34476,37 +34501,45 @@ async function run(options) {
     }
     /** Checks if Pull Request already exists */
     try {
-        const pull = await (0, github_utils_1.fetchExistingPullRequest)(octokit, owner, repo, srcBranch, targetBranch);
-        if (pull) {
-            (0, core_1.info)(`Pull request already exists: ${pull.html_url}`);
+        pullRequest = await (0, github_utils_1.fetchExistingPullRequest)(octokit, owner, repo, srcBranch, targetBranch);
+        if (pullRequest) {
+            (0, core_1.info)(`Pull request already exists: ${pullRequest.html_url}`);
         }
     }
     catch (error) {
         (0, core_1.setFailed)(`Error checking for existing pull requests: ${error.message}`);
-    }
-    /** Checks if there are commits between the source and target branch */
-    const hasCommits = await (0, git_util_1.hasCommitsBetween)(`origin/${targetBranch}`, `origin/${srcBranch}`);
-    if (!hasCommits) {
-        (0, core_1.info)(`No commits between ${srcBranch} and ${targetBranch}`);
         return;
     }
-    const createParam = {
-        owner,
-        repo,
-        title: title || `Merge changes from ${srcBranch} to ${targetBranch}`,
-        head: srcBranch,
-        base: targetBranch,
-        body: body || 'Automatically created pull request'
-    };
-    (0, core_1.debug)(`Creating pull request: ${JSON.stringify(createParam)}`);
-    octokit.rest.pulls
-        .create(createParam)
-        .then((response) => {
-        console.log(`Pull request created: ${response.data.html_url}`);
-    })
-        .catch((error) => {
-        (0, core_1.setFailed)(`Error creating pull request: ${error.message}`);
-    });
+    if (!pullRequest) {
+        /** Checks if there are commits between the source and target branch */
+        const hasCommits = await (0, git_util_1.hasCommitsBetween)(`origin/${targetBranch}`, `origin/${srcBranch}`);
+        if (!hasCommits) {
+            (0, core_1.info)(`No commits between ${srcBranch} and ${targetBranch}`);
+            return;
+        }
+        pullRequest = await (0, github_utils_1.createPullRequest)(octokit, {
+            owner,
+            repo,
+            title: title || `Merge changes from ${srcBranch} to ${targetBranch}`,
+            head: srcBranch,
+            base: targetBranch,
+            body: body || 'Automatically created pull request'
+        });
+    }
+    if (!pullRequest)
+        return;
+    if (options.labels.length > 0) {
+        /** Adds labels to the pull request */
+        const labels = await (0, github_utils_1.addLabelsToPullRequest)(octokit, {
+            owner,
+            repo,
+            issue_number: pullRequest.number,
+            labels: options.labels
+        });
+        if (labels) {
+            (0, core_1.info)(`Added labels to pull request: ${labels.map((label) => label.name)}`);
+        }
+    }
 }
 exports.run = run;
 
@@ -36444,16 +36477,26 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core_1 = __nccwpck_require__(9093);
 const github_1 = __nccwpck_require__(5942);
 const run_1 = __nccwpck_require__(882);
+/**
+ * Generates the option parameters for the auto-pull-request.
+ * @returns {OptionParams} The generated option parameters.
+ */
 const generateOptionParams = () => ({
     srcBranch: (0, core_1.getInput)('src-branch'),
     targetBranch: (0, core_1.getInput)('target-branch'),
     title: (0, core_1.getInput)('title'),
     body: (0, core_1.getInput)('body'),
+    /** input is a comma-separated list */
+    labels: (0, core_1.getInput)('labels')
+        .split(',')
+        .map((label) => label.trim())
+        .filter((label) => label !== ''),
     repoToken: (0, core_1.getInput)('repo-token'),
     repo: github_1.context.repo.repo,
     owner: github_1.context.repo.owner
 });
 async function main() {
+    (0, core_1.debug)(`running with parameters: ${JSON.stringify(generateOptionParams())}`);
     (0, run_1.run)(generateOptionParams());
 }
 main();
