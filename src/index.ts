@@ -1,4 +1,4 @@
-import { getInput } from '@actions/core'
+import { debug, getInput, info } from '@actions/core'
 import { context } from '@actions/github'
 import { OptionParams, run } from './run'
 
@@ -7,12 +7,14 @@ const generateOptionParams = (): OptionParams => ({
   targetBranch: getInput('target-branch'),
   title: getInput('title'),
   body: getInput('body'),
+  labels: getInput('labels')?.split(/[\s]+/),
   repoToken: getInput('repo-token'),
   repo: context.repo.repo,
   owner: context.repo.owner
 })
 
 async function main() {
+  debug(`running with parameters: ${JSON.stringify(generateOptionParams())}`)
   run(generateOptionParams())
 }
 

@@ -36449,11 +36449,13 @@ const generateOptionParams = () => ({
     targetBranch: (0, core_1.getInput)('target-branch'),
     title: (0, core_1.getInput)('title'),
     body: (0, core_1.getInput)('body'),
+    labels: (0, core_1.getInput)('labels')?.split(/[\s]+/),
     repoToken: (0, core_1.getInput)('repo-token'),
     repo: github_1.context.repo.repo,
     owner: github_1.context.repo.owner
 });
 async function main() {
+    (0, core_1.debug)(`running with parameters: ${JSON.stringify(generateOptionParams())}`);
     (0, run_1.run)(generateOptionParams());
 }
 main();

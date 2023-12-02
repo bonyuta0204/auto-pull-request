@@ -11,6 +11,7 @@ export type OptionParams = {
   repoToken: string
   repo: string
   owner: string
+  labels: string[] | undefined
 }
 
 export async function run(options: OptionParams) {
