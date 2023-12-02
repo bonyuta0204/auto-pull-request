@@ -1,6 +1,7 @@
 import { setFailed, debug, info } from '@actions/core'
 import { getOctokit } from '@actions/github'
 import { fetchRemoteBranches, hasCommitsBetween } from './git-util'
+import { fetchExistingPullRequest } from './github-utils'
 
 export type OptionParams = {
   srcBranch: string
@@ -37,16 +38,15 @@ export async function run(options: OptionParams) {
 
   /** Checks if Pull Request already exists */
   try {
-    const pulls = await octokit.rest.pulls.list({
+    const pull = await fetchExistingPullRequest(
+      octokit,
       owner,
       repo,
-      state: 'open',
-      head: `${owner}:${srcBranch}`,
-      base: targetBranch
-    })
-    if (pulls.data.length > 0) {
-      info(`Pull request already exists: ${pulls.data[0].html_url}`)
-      return
+      srcBranch,
+      targetBranch
+    )
+    if (pull) {
+      info(`Pull request already exists: ${pull.html_url}`)
     }
   } catch (error: any) {
     setFailed(`Error checking for existing pull requests: ${error.message}`)
