@@ -1,7 +1,12 @@
 import { setFailed, debug, info } from '@actions/core'
 import { getOctokit } from '@actions/github'
 import { fetchRemoteBranches, hasCommitsBetween } from './git-util'
-import { fetchExistingPullRequest } from './github-utils'
+import {
+  PullRequestDetailItem,
+  PullRequestItem,
+  createPullRequest,
+  fetchExistingPullRequest
+} from './github-utils'
 
 export type OptionParams = {
   srcBranch: string
@@ -11,7 +16,7 @@ export type OptionParams = {
   repoToken: string
   repo: string
   owner: string
-  labels: string[] | undefined
+  labels: string[]
 }
 
 export async function run(options: OptionParams) {
@@ -19,6 +24,8 @@ export async function run(options: OptionParams) {
     options
 
   const octokit = getOctokit(repoToken)
+  let pullRequest: PullRequestItem | PullRequestDetailItem | undefined =
+    undefined
 
   if (!srcBranch || !targetBranch) {
     setFailed('Source or target branch not specified')
@@ -39,47 +46,43 @@ export async function run(options: OptionParams) {
 
   /** Checks if Pull Request already exists */
   try {
-    const pull = await fetchExistingPullRequest(
+    pullRequest = await fetchExistingPullRequest(
       octokit,
       owner,
       repo,
       srcBranch,
       targetBranch
     )
-    if (pull) {
-      info(`Pull request already exists: ${pull.html_url}`)
+    if (pullRequest) {
+      info(`Pull request already exists: ${pullRequest.html_url}`)
     }
   } catch (error: any) {
     setFailed(`Error checking for existing pull requests: ${error.message}`)
-  }
-
-  /** Checks if there are commits between the source and target branch */
-  const hasCommits = await hasCommitsBetween(
-    `origin/${targetBranch}`,
-    `origin/${srcBranch}`
-  )
-  if (!hasCommits) {
-    info(`No commits between ${srcBranch} and ${targetBranch}`)
     return
   }
 
-  const createParam: Parameters<typeof octokit.rest.pulls.create>[0] = {
-    owner,
-    repo,
-    title: title || `Merge changes from ${srcBranch} to ${targetBranch}`,
-    head: srcBranch,
-    base: targetBranch,
-    body: body || 'Automatically created pull request'
+  if (!pullRequest) {
+    /** Checks if there are commits between the source and target branch */
+    const hasCommits = await hasCommitsBetween(
+      `origin/${targetBranch}`,
+      `origin/${srcBranch}`
+    )
+    if (!hasCommits) {
+      info(`No commits between ${srcBranch} and ${targetBranch}`)
+      return
+    }
+
+    pullRequest = await createPullRequest(octokit, {
+      owner,
+      repo,
+      title: title || `Merge changes from ${srcBranch} to ${targetBranch}`,
+      head: srcBranch,
+      base: targetBranch,
+      body: body || 'Automatically created pull request'
+    })
   }
 
-  debug(`Creating pull request: ${JSON.stringify(createParam)}`)
+  if (!pullRequest) return
 
-  octokit.rest.pulls
-    .create(createParam)
-    .then((response) => {
-      console.log(`Pull request created: ${response.data.html_url}`)
-    })
-    .catch((error) => {
-      setFailed(`Error creating pull request: ${error.message}`)
-    })
+  info(`Pull request created: ${pullRequest.html_url}`)
 }
