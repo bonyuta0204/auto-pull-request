@@ -7,7 +7,9 @@ const generateOptionParams = (): OptionParams => ({
   targetBranch: getInput('target-branch'),
   title: getInput('title'),
   body: getInput('body'),
-  labels: getInput('labels')?.split(/[\s]+/),
+  labels: getInput('labels')
+    ?.split(',')
+    .map((label) => label.trim()),
   repoToken: getInput('repo-token'),
   repo: context.repo.repo,
   owner: context.repo.owner

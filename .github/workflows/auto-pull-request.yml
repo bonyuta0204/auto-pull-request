@@ -3,8 +3,8 @@ name: Manual Dispatch
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
+#    branches:
+#      - main
 
 jobs:
   run:
@@ -22,6 +22,4 @@ jobs:
           target-branch: "release/v1"
           title: "Main to Release v1"
           body: "main to Release v1"
-          labels: |
-              Release
-              Review Pass
+          labels: "Review Pass,Release"
