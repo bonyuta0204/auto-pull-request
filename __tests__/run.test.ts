@@ -1,13 +1,17 @@
 import { setFailed, info } from '@actions/core'
 import { run } from '../src/run'
-import { fetchRemoteBranches } from '../src/git-util'
-import { fetchExistingPullRequest } from '../src/github-utils'
+import { fetchRemoteBranches, hasCommitsBetween } from '../src/git-util'
+import {
+  addLabelsToPullRequest,
+  createPullRequest,
+  fetchExistingPullRequest
+} from '../src/github-utils'
 import { vi, expect, describe, it, beforeEach } from 'vitest'
 
 vi.mock('@actions/core', () => ({
   getInput: vi.fn(),
-  setFailed: vi.fn(),
-  info: vi.fn()
+  setFailed: vi.fn((msg: string) => console.error(msg)),
+  info: vi.fn((msg: string) => console.log(msg))
 }))
 
 vi.mock('../src/git-util', () => ({
@@ -16,7 +20,9 @@ vi.mock('../src/git-util', () => ({
 }))
 
 vi.mock('../src/github-utils', () => ({
-  fetchExistingPullRequest: vi.fn()
+  fetchExistingPullRequest: vi.fn(),
+  createPullRequest: vi.fn(),
+  addLabelsToPullRequest: vi.fn()
 }))
 
 describe('main function tests', () => {
@@ -30,7 +36,8 @@ describe('main function tests', () => {
       targetBranch: 'target-branch',
       repoToken: 'dummy-token',
       repo: 'test-repo',
-      owner: 'test-owner'
+      owner: 'test-owner',
+      labels: []
     })
 
     expect(setFailed).toHaveBeenCalledWith(
@@ -46,7 +53,8 @@ describe('main function tests', () => {
       targetBranch: 'valid-branch',
       repoToken: 'dummy-token',
       repo: 'test-repo',
-      owner: 'test-owner'
+      owner: 'test-owner',
+      labels: []
     })
 
     expect(setFailed).toHaveBeenCalledWith(
@@ -54,26 +62,90 @@ describe('main function tests', () => {
     )
   })
 
-  it('should fail when pull request already exist', async () => {
-    const dummyPullRequest = 'https://dummy-pr.com'
-    ;(fetchRemoteBranches as any).mockResolvedValue([
-      'valid-branch',
-      'valid-branch-2'
-    ])
-    ;(fetchExistingPullRequest as any).mockResolvedValue({
-      html_url: dummyPullRequest
+  describe('when there is valid diffrence', () => {
+    beforeEach(() => {
+      ;(fetchRemoteBranches as any).mockResolvedValue([
+        'valid-branch',
+        'valid-branch-2'
+      ])
+      ;(hasCommitsBetween as any).mockResolvedValue(true)
+    })
+    describe('pull request is not created when pull request already exist', async () => {
+      const dummyPullRequest = 'https://dummy-pr.com'
+      beforeEach(() => {
+        ;(fetchExistingPullRequest as any).mockResolvedValue({
+          html_url: dummyPullRequest
+        })
+      })
+
+      it('should not create pull request when there is existing pull request', async () => {
+        await run({
+          srcBranch: 'valid-branch',
+          targetBranch: 'valid-branch-2',
+          repoToken: 'dummy-token',
+          repo: 'test-repo',
+          owner: 'test-owner',
+          labels: []
+        })
+
+        expect(info).toHaveBeenCalledWith(
+          `Pull request already exists: ${dummyPullRequest}`
+        )
+        expect(createPullRequest).not.toHaveBeenCalled()
+
+        expect(addLabelsToPullRequest).not.toHaveBeenCalled()
+      })
+
+      it('should called addLabel request', async () => {
+        await run({
+          srcBranch: 'valid-branch',
+          targetBranch: 'valid-branch-2',
+          repoToken: 'dummy-token',
+          repo: 'test-repo',
+          owner: 'test-owner',
+          labels: ['test-label', 'test-label2']
+        })
+
+        expect(info).toHaveBeenCalledWith(
+          `Pull request already exists: ${dummyPullRequest}`
+        )
+        expect(createPullRequest).not.toHaveBeenCalled()
+
+        expect(addLabelsToPullRequest).toHaveBeenCalled()
+      })
     })
 
-    await run({
-      srcBranch: 'valid-branch',
-      targetBranch: 'valid-branch-2',
-      repoToken: 'dummy-token',
-      repo: 'test-repo',
-      owner: 'test-owner'
+    it('should create pull request when there is no existing pull request', async () => {
+      ;(fetchExistingPullRequest as any).mockResolvedValue(undefined)
+
+      await run({
+        srcBranch: 'valid-branch',
+        targetBranch: 'valid-branch-2',
+        repoToken: 'dummy-token',
+        repo: 'test-repo',
+        owner: 'test-owner',
+        labels: []
+      })
+
+      expect(createPullRequest).toHaveBeenCalled()
+      expect(addLabelsToPullRequest).not.toHaveBeenCalled()
     })
 
-    expect(info).toHaveBeenCalledWith(
-      `Pull request already exists: ${dummyPullRequest}`
-    )
+    it('should create pull request and label when there is no existing pull request', async () => {
+      ;(fetchExistingPullRequest as any).mockResolvedValue(undefined)
+      ;(createPullRequest as any).mockResolvedValue({ pullNumber: 1 })
+
+      await run({
+        srcBranch: 'valid-branch',
+        targetBranch: 'valid-branch-2',
+        repoToken: 'dummy-token',
+        repo: 'test-repo',
+        owner: 'test-owner',
+        labels: ['test-label', 'test-label2']
+      })
+
+      expect(createPullRequest).toHaveBeenCalled()
+      expect(addLabelsToPullRequest).toHaveBeenCalled()
+    })
   })
 })

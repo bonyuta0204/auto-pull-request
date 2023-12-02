@@ -68,6 +68,7 @@ export async function run(options: OptionParams) {
       `origin/${targetBranch}`,
       `origin/${srcBranch}`
     )
+
     if (!hasCommits) {
       info(`No commits between ${srcBranch} and ${targetBranch}`)
       return
